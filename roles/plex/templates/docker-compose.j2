@@ -1,0 +1,24 @@
+version: '3'
+x-back-res: &hres
+  resources:
+    limits:
+      cpus: '{{ high_cpu_limit }}'
+      memory: '{{ high_ram_limit }}'
+    reservations:
+      memory: '{{ high_ram_reserv }}'
+services:
+  plex:
+    container_name: plex
+    image: 'lscr.io/linuxserver/plex:{{ plex_image_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/plex/.env'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:32400/web || exit 1']
+    network_mode: host
+    volumes:
+      - '/home/abc/config:/config'
+      - '/home/abc/tv/complete:/tv'
+    devices:
+        - '/dev/dri:/dev/dri'
+    deploy:
+      <<: *hres

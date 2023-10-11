@@ -1,0 +1,27 @@
+- name: Create GitHub Runner directories
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} mode='0755' state=directory
+  with_items:
+    - { path: '/home/{{ user }}/garunner', owner: '{{ user }}' }
+  tags:
+    - garunner
+    -
+- name: Push GitHub Runner docker-compose files
+  ansible.builtin.template: src={{ item.src }} dest={{ item.dest }} owner='{{ user }}' group='{{ user }}'
+  with_items:
+    - { src: .env, dest: '/home/{{ user }}/garunner/.env' }
+    - { src: docker-compose.j2, dest: '/home/{{ user }}/garunner/docker-compose.yaml' }
+  tags:
+    - garunner
+
+- name: Apply GitHub Runner docker-compose with inline definition
+  community.docker.docker_compose:
+    project_name: garunner
+    restarted: '{{ command_restart }}'
+    stopped: '{{ command_stop }}'
+    project_src: '/home/{{ user }}/garunner'
+    remove_orphans: true
+  register: output
+  environment:
+    GITHUB_TOKEN: '{{ github_token }}'
+  tags:
+    - garunner

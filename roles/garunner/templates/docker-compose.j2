@@ -1,0 +1,29 @@
+version: '3'
+volumes:
+    actions_runner: {}
+x-common-sec: &csec
+  GITHUB_TOKEN: ${GITHUB_TOKEN}
+x-back-res: &lres
+  resources:
+    limits:
+      cpus: '{{ low_cpu_limit }}'
+      memory: '{{ low_ram_limit }}'
+    reservations:
+      memory: '{{ low_ram_reserv }}'
+services:
+  garunner:
+    container_name: garunner
+    image: 'aditor/ga-runner-docker:{{ garunner_image_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/garunner/.env'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - 'actions_runner:/home/docker/actions-runner'
+    environment:
+      <<: *csec
+    deploy:
+      <<: *lres
+    networks:
+      - external_network
+networks:
+  external_network:

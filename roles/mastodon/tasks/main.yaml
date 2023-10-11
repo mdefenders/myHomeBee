@@ -1,0 +1,74 @@
+- name: Create groups
+  ansible.builtin.group: name={{ item.name }} gid={{ item.gid }} state=present
+  with_items:
+    - { name: postgres, gid: 70 }
+    - { name: mastodon, gid: 991 }
+  tags:
+    - mastodon
+
+- name: Create users
+  ansible.builtin.user: name={{ item.name }} uid={{ item.uid }} group={{ item.group }} state=present
+  with_items:
+    - { name: postgres, uid: 70, group: postgres }
+    - { name: mastodon, uid: 991, group: 991 }
+    - { name: redis, uid: 999, group: 1000 }
+  tags:
+    - mastodon
+
+- name: Fix user home
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} group={{ item.group }} mode=0700
+  with_items:
+    - { path: /home/postgres, owner: postgres, group: postgres }
+    - { path: /home/mastodon, owner: mastodon, group: mastodon }
+    - { path: /home/redis, owner: redis, group: root }
+  tags:
+    - mastodon
+
+
+- name: Create directories
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} mode='0755' state=directory
+  with_items:
+    - { path: '{{ redis_data_dir }}', owner: redis }
+    - { path: '{{ mastodon_data_dir }}', owner: mastodon }
+    - { path: '/home/{{ user }}/mastodon', owner: '{{ user }}' }
+    - { path: '{{ mastodon_conf_dir }}', owner: mastodon }
+  tags:
+    - mastodon
+
+- name: Push docker-compose and config files
+  ansible.builtin.template: src={{ item.src }} dest={{ item.dest }} owner='{{ item.user }}' group='{{ item.group }}'
+  with_items:
+    - { src: .env, dest: '/home/{{ user }}/mastodon/.env', user: '{{ user }}', group: '{{ user }}' }
+    - { src: docker-compose.j2, dest: '/home/{{ user }}/mastodon/docker-compose.yaml', user: '{{ user }}', group: '{{ user }}' }
+    - { src: .env.herder, dest: '/home/{{ user }}/mastodon/.env.herder', user: '{{ user }}', group: '{{ user }}' }
+
+  tags:
+    - mastodon
+
+- name: Safe push updatable conf files
+  ansible.builtin.template: src={{ item.src }} dest={{ item.dest }} owner='{{ item.user }}' group='{{ item.group }}' force=false
+  with_items:
+    - { src: rclone.conf, dest: '{{ mastodon_conf_dir }}/rclone.conf', user: mastodon, group: mastodon }
+  tags:
+    - mastodon
+
+- name: Apply mastodon project with inline definition
+  community.docker.docker_compose:
+    project_name: mastodon
+    restarted: '{{ command_restart }}'
+    stopped: '{{ command_stop }}'
+    project_src: '/home/{{ user }}/mastodon'
+    remove_orphans: true
+  register: output
+  environment:
+    DB_PASS: '{{ postgres_password }}'
+    SECRET_KEY_BASE: '{{ secret_key_base }}'
+    OTP_SECRET: '{{ otp_secret }}'
+    VAPID_PRIVATE_KEY: '{{ vapid_private_key }}'
+    VAPID_PUBLIC_KEY: '{{ vapid_public_key }}'
+    POSTGRES_PASSWORD: '{{ postgres_password }}'
+    SMTP_PASSWORD: '{{ smtp_password }}'
+    RCLONE_DRIVE_CLIENT_ID: '{{ rclone_drive_client_id }}'
+    RCLONE_DRIVE_CLIENT_SECRET: '{{ rclone_drive_client_secret }}'
+  tags:
+    - mastodon

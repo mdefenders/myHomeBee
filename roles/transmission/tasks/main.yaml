@@ -1,0 +1,43 @@
+- name: Create transmission users
+  ansible.builtin.user: name={{ item.name }} uid={{ item.uid }} group={{ item.group }} state=present
+  with_items:
+    - { name: abc, uid: 911, group: 1000 }
+  tags:
+    - transmission
+
+- name: Fix user home
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} group={{ item.group }} mode=0700
+  with_items:
+    - { path: /home/abc, owner: abc, group: 1000 }
+  tags:
+    - transmission
+
+- name: Create transmission directories
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} mode='0755' state=directory
+  with_items:
+    - { path: '/home/{{ user }}/transmission', owner: '{{ user }}' }
+    - { path: '/home/abc/config', owner: 1000 }
+    - { path: '/home/abc/tv/complete', owner: 1000 }
+  tags:
+    - transmission
+
+- name: Push transmission docker-compose files
+  ansible.builtin.template: src={{ item.src }} dest={{ item.dest }} owner='{{ user }}' group='{{ user }}'
+  with_items:
+    - { src: .env, dest: '/home/{{ user }}/transmission/.env' }
+    - { src: docker-compose.j2, dest: '/home/{{ user }}/transmission/docker-compose.yaml' }
+  tags:
+    - transmission
+
+- name: Apply transmission docker-compose with inline definition
+  community.docker.docker_compose:
+    project_name: transmission
+    restarted: '{{ command_restart }}'
+    stopped: '{{ command_stop }}'
+    project_src: '/home/{{ user }}/transmission'
+    remove_orphans: true
+  register: output
+  environment:
+    PASS: '{{ transmission_pass }}'
+  tags:
+    - transmission

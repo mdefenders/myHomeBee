@@ -1,0 +1,3 @@
+- hosts: mastodon
+  roles:
+    - mastodon

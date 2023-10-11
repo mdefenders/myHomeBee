@@ -1,0 +1,178 @@
+version: '3'
+volumes:
+    backups: {}
+x-common-sec: &csec
+  DB_PASS: ${DB_PASS}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+  OTP_SECRET: ${OTP_SECRET}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+  SMTP_PASSWORD: ${SMTP_PASSWORD}
+  RCLONE_DRIVE_CLIENT_ID: ${RCLONE_DRIVE_CLIENT_ID}
+  RCLONE_DRIVE_CLIENT_SECRET: ${RCLONE_DRIVE_CLIENT_SECRET}
+x-db-env: &denv
+  POSTGRES_USER: mastodon
+  POSTGRES_DB: mastodon_production
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+x-front-res: &lres
+  resources:
+    limits:
+      cpus: '{{ low_cpu_limit }}'
+      memory: '{{ low_ram_limit }}'
+    reservations:
+      memory: '{{ low_ram_reserv }}'
+x-back-res: &hres
+  resources:
+    limits:
+      cpus: '{{ high_cpu_limit }}'
+      memory: '{{ high_ram_limit }}'
+    reservations:
+      memory: '{{ high_ram_reserv }}'
+services:
+  cloudflared:
+    container_name: cloudflared
+    image: 'cloudflare/cloudflared:{{ cloudflared_tag }}'
+    command:
+      - 'tunnel'
+      - '--no-autoupdate'
+      - 'run'
+      - '--token'
+      - '{{ cloudflared_api_key }}'
+    networks:
+      - external_network
+    restart: unless-stopped
+    deploy:
+      <<: *lres
+  db:
+    container_name: postgres
+    restart: unless-stopped
+    image: 'postgres:{{ postgres_tag }}'
+    shm_size: 256mb
+    networks:
+      - internal_network
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+    volumes:
+      - '{{ postgres_data_dir }}:/var/lib/postgresql/data'
+    environment:
+      <<: *denv
+    deploy:
+      <<: *lres
+  redis:
+    container_name: redis
+    restart: unless-stopped
+    image: 'redis:{{ redis_tag }}'
+    networks:
+      - internal_network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+    volumes:
+      - '{{ redis_data_dir }}:/data'
+    deploy:
+      <<: *lres
+  web:
+    container_name: web
+    image: 'ghcr.io/mastodon/mastodon:{{ mastodon_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/mastodon/.env'
+    command: bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000"
+    networks:
+      - external_network
+      - internal_network
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:3000/health || exit 1']
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - '{{ mastodon_data_dir }}:/mastodon/public/system'
+    environment:
+      <<: *csec
+    deploy:
+      <<: *hres
+{% if init_db %}
+  db-init:
+    container_name: db-init
+    image: 'ghcr.io/mastodon/mastodon:{{ mastodon_tag }}'
+    env_file: '/home/{{ user }}/mastodon/.env'
+    command: 'bash -c "{{ command_init }}"'
+    networks:
+      - internal_network
+    depends_on:
+      - db
+      - redis
+    environment:
+      <<: *csec
+    deploy:
+      <<: *lres
+{% endif %}
+  streaming:
+    container_name: streaming
+    image: 'ghcr.io/mastodon/mastodon:{{ mastodon_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/mastodon/.env'
+    command: node ./streaming
+    networks:
+      - external_network
+      - internal_network
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1']
+    ports:
+      - '127.0.0.1:4000:4000'
+    depends_on:
+      - db
+      - redis
+    environment:
+      <<: *csec
+    deploy:
+      <<: *hres
+  sidekiq:
+    container_name: sidekiq
+    image: 'ghcr.io/mastodon/mastodon:{{ mastodon_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/mastodon/.env'
+    command: bundle exec sidekiq
+    depends_on:
+      - db
+      - redis
+    networks:
+      - internal_network
+      - external_network
+    volumes:
+      - '{{ mastodon_data_dir }}:/mastodon/public/system'
+    healthcheck:
+      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq\ 6' || false"]
+    environment:
+      <<: *csec
+    deploy:
+      <<: *hres
+  mastodon-herder:
+    container_name: mastodon-herder
+    image: 'mdefenders/mastodon-herder:{{ mastodon_herder_tag }}'
+    restart: unless-stopped
+    env_file:
+      - '/home/{{ user }}/mastodon/.env.herder'
+      - '/home/{{ user }}/mastodon/.env'
+    networks:
+      - external_network
+      - internal_network
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - '{{ mastodon_data_dir }}:/mastodon/public/system'
+      - '{{ mastodon_conf_dir }}:/home/mastodon/.config'
+      - 'backups:/home/mastodon/backups'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    environment:
+      <<: *csec
+    deploy:
+      <<: *lres
+networks:
+  external_network:
+  internal_network:
+    internal: true

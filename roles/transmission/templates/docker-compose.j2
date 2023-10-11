@@ -1,0 +1,27 @@
+version: '3'
+x-common-sec: &csec
+  PASS: ${PASS}
+x-back-res: &hres
+  resources:
+    limits:
+      cpus: '{{ high_cpu_limit }}'
+      memory: '{{ high_ram_limit }}'
+    reservations:
+      memory: '{{ high_ram_reserv }}'
+services:
+  transmission:
+    container_name: transmission
+    image: 'lscr.io/linuxserver/transmission:{{ transmission_image_tag }}'
+    restart: unless-stopped
+    env_file: '/home/{{ user }}/transmission/.env'
+    volumes:
+      - '/home/abc/config:/config'
+      - '/home/abc/tv:/downloads'
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    environment:
+      <<: *csec
+    deploy:
+      <<: *hres

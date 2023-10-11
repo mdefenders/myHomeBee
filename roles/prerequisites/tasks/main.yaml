@@ -1,0 +1,58 @@
+- name: Create docker data directories
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} group={{ item.group }} mode={{ item.mode }} state=directory
+  with_items:
+    - { path: '/home/docker', owner: root, group: root, mode: 710 }
+  tags:
+    - prereq
+
+- name: Copy configs
+  ansible.builtin.copy: src={{ item.src }} dest={{ item.dest }} mode=644
+  with_items:
+    - { src: daemon.json, dest: /etc/docker/daemon.json }
+  tags:
+    - prereq
+
+- name: Packages Install
+  ansible.builtin.apt: name={{ item.name }} state={{ item.state }}
+  with_items:
+  - { name: docker.io, state: latest }
+  - { name: acpid, state: latest }
+  - { name: docker-compose, state: latest }
+  - { name: curl, state: latest }
+  - { name: htop, state: latest }
+  - { name: net-tools, state: latest }
+  - { name: lm-sensors, state: latest }
+  ignore_errors: yes
+  tags:
+    - prereq
+
+- name: Uncomment line from /etc/systemd/logind.conf
+  ansible.builtin.lineinfile:
+    dest: /etc/systemd/logind.conf
+    regexp: '^.*HandlePowerKey.*$'
+    line: 'HandlePowerKey=poweroff'
+  tags:
+    - prereq
+
+- name: Enable and start services
+  ansible.builtin.systemd: name={{ item }} enabled=yes state=started
+  with_items:
+  - docker
+  - acpid
+  tags:
+    - prereq
+
+- name: Add the user to proper groups
+  ansible.builtin.user:
+    name: '{{ user }}'
+    groups: docker
+    append: yes
+  tags:
+    - prereq
+
+- ansible.posix.sysctl:
+    name: vm.swappiness
+    value: '0'
+    state: present
+  tags:
+    - prereq

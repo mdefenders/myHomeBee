@@ -1,0 +1,49 @@
+- name: Create monitoring users
+  ansible.builtin.user: name={{ item.name }} uid={{ item.uid }} group={{ item.group }} state=present
+  with_items:
+    - { name: grafana, uid: 472, group: users }
+  tags:
+    - monitoring
+
+- name: Fix user home
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} group={{ item.group }} mode=0700
+  with_items:
+    - { path: /home/grafana, owner: grafana, group: root }
+  tags:
+    - monitoring
+
+- name: Create monitoring directories
+  ansible.builtin.file: path={{ item.path }} owner={{ item.owner }} mode='0755' state=directory
+  with_items:
+    - { path: '/home/{{ user }}/monitoring/prometheus', owner: '{{ user }}' }
+  tags:
+    - monitoring
+
+- name: Copy configs
+  ansible.builtin.copy: src={{ item.src }} dest={{ item.dest }} owner={{ item.owner }} mode=644
+  with_items:
+    - { src: prometheus.yml, dest: '/home/{{ user }}/monitoring/prometheus/prometheus.yml', owner: '{{ user }}' }
+    - { src: provisioning, dest: '/home/grafana', owner: grafana }
+  tags:
+    - monitoring
+
+- name: Push monitoring docker-compose files
+  ansible.builtin.template: src={{ item.src }} dest={{ item.dest }} owner='{{ user }}' group='{{ user }}'
+  with_items:
+    - { src: .env, dest: '/home/{{ user }}/monitoring/.env' }
+    - { src: docker-compose.j2, dest: '/home/{{ user }}/monitoring/docker-compose.yaml' }
+  tags:
+    - monitoring
+
+- name: Apply transmission docker-compose with inline definition
+  community.docker.docker_compose:
+    project_name: monitoring
+    restarted: '{{ command_restart }}'
+    stopped: '{{ command_stop }}'
+    project_src: '/home/{{ user }}/monitoring'
+    remove_orphans: true
+  register: output
+  environment:
+    GF_SECURITY_ADMIN_PASSWORD: '{{ gf_security_admin_password }}'
+  tags:
+    - monitoring

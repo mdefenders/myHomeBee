@@ -1,0 +1,7 @@
+---
+- import_playbook: prerequisites.yaml
+- import_playbook: plex.yaml
+- import_playbook: transmission.yaml
+- import_playbook: monitoring.yaml
+- import_playbook: mastodon.yaml
+- import_playbook: garunner.yaml

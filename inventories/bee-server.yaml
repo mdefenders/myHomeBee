@@ -1,0 +1,76 @@
+all:
+  vars:
+    # Remote host sudo user
+    user: den
+    time_zone: 'Etc/UTC'
+    high_cpu_limit: '1'
+    high_ram_limit: 2g
+    high_ram_reserv: 1g
+    low_cpu_limit: '0.25'
+    low_ram_limit: 1g
+    low_ram_reserv: 256m
+    command_restart: false
+    command_stop: false
+    ansible_become_password: "{{ lookup('env', 'ANSIBLE_BECOME_PASSWORD') }}"
+  children:
+    plex:
+      vars:
+        plex_image_tag: 1.32.6
+      hosts:
+        bee.local:
+    transmission:
+      vars:
+        transmission_image_tag: 4.0.4
+        transmission_pass: '{{ vault_transmission_pass }}'
+      hosts:
+        bee.local:
+    monitoring:
+      vars:
+        prom_image_tag: v2.47.0
+        grafana_image_tag: 10.1.1
+        cadv_image_tag: v0.47.2
+        ne_image_tag: v1.6.1
+        prom_retention_size: 1GB
+        gf_security_admin_password: '{{ vault_gf_security_admin_password }}'
+      hosts:
+        bee.local:
+    mastodon:
+      vars:
+        local_domain: foo.bar
+        smtp_login: admin@foo.bar
+        smtp_from_address: admin@foo.bar
+        cloudflared_tag: latest
+        redis_tag: 7-alpine
+        mastodon_tag: v4.2.0
+        postgres_tag: 14-alpine
+        mastodon_herder_tag: 0.0.5
+        default_locale: en
+        smtp_server: smtp.gmail.com
+        backup_sleep_before: 43200
+        backup_sleep_after: 43200
+        command_init: "echo DB init skipped"
+        init_db: false
+        cloudflared_api_key: "{{ vault_cloudflared_api_key }}"
+        postgres_password: "{{ vault_postgres_password }}"
+        secret_key_base: "{{ vault_secret_key_base }}"
+        otp_secret: "{{ vault_otp_secret }}"
+        vapid_private_key: "{{ vault_vapid_private_key }}"
+        vapid_public_key: "{{ vault_vapid_public_key }}"
+        smtp_password: "{{ vault_smtp_password }}"
+        rclone_drive_client_id: "{{ vault_rclone_drive_client_id }}"
+        rclone_drive_client_secret: "{{ vault_rclone_drive_client_secret }}"
+        postgres_data_dir: /home/postgres/postgres14
+        redis_data_dir: /home/redis/data
+        mastodon_data_dir: /home/mastodon/public/system
+        mastodon_conf_dir: /home/mastodon/.config
+        gdrive_bucket: gdrive
+      hosts:
+        bee.local:
+    garunner:
+      vars:
+        garunner_image_tag: 0.0.11
+        github_organization: mdefenders
+        github_runner_version: "2.309.0"
+        github_token: '{{ vault_github_token }}'
+      hosts:
+        bee.local:
