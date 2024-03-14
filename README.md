@@ -38,7 +38,7 @@ Create secrets only for services you are going to use.
 copy example.config.env to config.env and pace your passwords (sudo and ansible-vault) there. Keep it private, or don't use it at all.
 
 ### Create Mastodon secrets
-Refer to mastodon dodc for details https://docs.joinmastodon.org/admin/install/#creating-a-new-mastodon-instance
+Refer to mastodon docs for details https://docs.joinmastodon.org/admin/install/#creating-a-new-mastodon-instance
 
 ```shell
 ansible-vault create inventories/group_vars/mastodon.yaml

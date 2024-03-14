@@ -13,7 +13,7 @@ x-back-res: &lres
 services:
   garunner:
     container_name: garunner
-    image: 'aditor/ga-runner-docker:{{ garunner_image_tag }}'
+    image: 'mdefenders/ga-runner-docker:{{ garunner_image_tag }}'
     restart: unless-stopped
     env_file: '/home/{{ user }}/garunner/.env'
     volumes:

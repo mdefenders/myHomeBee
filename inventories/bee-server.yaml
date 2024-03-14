@@ -15,7 +15,7 @@ all:
   children:
     plex:
       vars:
-        plex_image_tag: 1.32.6
+        plex_image_tag: 1.40.0
       hosts:
         bee.local:
     transmission:
@@ -41,9 +41,9 @@ all:
         smtp_from_address: admin@foo.bar
         cloudflared_tag: latest
         redis_tag: 7-alpine
-        mastodon_tag: v4.2.0
+        mastodon_tag: v4.2.8
         postgres_tag: 14-alpine
-        mastodon_herder_tag: 0.0.5
+        mastodon_herder_tag: 0.0.8
         default_locale: en
         smtp_server: smtp.gmail.com
         backup_sleep_before: 43200
@@ -68,9 +68,9 @@ all:
         bee.local:
     garunner:
       vars:
-        garunner_image_tag: 0.0.11
+        garunner_image_tag: 0.0.15
         github_organization: mdefenders
-        github_runner_version: "2.309.0"
+        github_runner_version: "2.313.0"
         github_token: '{{ vault_github_token }}'
       hosts:
         bee.local:
