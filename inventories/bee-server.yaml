@@ -15,7 +15,7 @@ all:
   children:
     plex:
       vars:
-        plex_image_tag: 1.40.0
+        plex_image_tag: 1.40.1
       hosts:
         bee.local:
     transmission:
