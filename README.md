@@ -1,4 +1,4 @@
-# myHomeBee
+no# myHomeBee
 
 Run home Debian Linux multipurpose server
 
@@ -91,7 +91,6 @@ Edit inventories/bee-server.yaml. Add your host name to each host-groups you are
 You can trigger ansible playbook using make targets (see details below)
 Some targets accept ansible tags. Tag *All* is default if no tags provided
 
-## Deploy ssh keys
 ```shell
 make <target> [tags=<tag1,tag2...>]
 ```
