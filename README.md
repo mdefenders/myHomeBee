@@ -88,6 +88,16 @@ and paste
 vault_gh_runner_token: <your_github_runner_token>
 ```
 
+### Create Pi-hole secrets
+```shell
+ansible-vault create inventories/group_vars/pihole.yaml
+```
+and paste
+```yaml
+---
+vault_pihole_web_password: <your_pihole_ui_password>
+```
+
 ## Updating the inventory
 Inventory file contains group, hosts and vars.
 Each host-grou represents some service.
@@ -145,10 +155,9 @@ make help
 ```
 
 # Backlog
-- Pi-hole for local DNS
+- Combine Ha and zigbee2mqtt in one docker-compose, move mqtt to the internal network, protect zigbee2mqtt UI with password
 - Some local https support with split-dns
 - Nginx revers proxy for local services
-- WireGuard VPN
 - smtp to gmail local relay
 - PhotoPrism
 - Prometheus / Grafana for Alerting
