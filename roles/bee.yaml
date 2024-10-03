@@ -5,3 +5,8 @@
 - import_playbook: monitoring.yaml
 - import_playbook: mastodon.yaml
 - import_playbook: garunner.yaml
+- import_playbook: ha.yaml
+- import_playbook: pihole.yaml
+- import_playbook: z2m.yaml
+- import_playbook: motion.yaml
+- import_playbook: mjpeg.yaml

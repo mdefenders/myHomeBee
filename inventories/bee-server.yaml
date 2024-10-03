@@ -12,6 +12,7 @@ all:
     command_restart: false
     command_stop: false
     ansible_become_password: "{{ lookup('env', 'ANSIBLE_BECOME_PASSWORD') }}"
+    ansible_python_interpreter: auto_silent
   children:
     plex:
       vars:
@@ -41,9 +42,9 @@ all:
         smtp_from_address: admin@foo.bar
         cloudflared_tag: latest
         redis_tag: 7-alpine
-        mastodon_tag: v4.2.8
+        mastodon_tag: v4.2.13
         postgres_tag: 14-alpine
-        mastodon_herder_tag: 0.0.12
+        mastodon_herder_tag: 0.0.14
         default_locale: en
         smtp_server: smtp.gmail.com
         backup_sleep_before: 43200
@@ -68,9 +69,40 @@ all:
         bee.local:
     garunner:
       vars:
-        garunner_image_tag: 0.0.16
+        garunner_image_tag: 0.0.18
         github_organization: mdefenders
-        github_runner_version: "2.315.0"
+        github_runner_version: "2.319.1"
         github_token: '{{ vault_github_token }}'
+      hosts:
+        bee.local:
+    pihole:
+      vars:
+        pihole_web_password: '{{ vault_pihole_web_password }}'
+      hosts:
+        bee.local:
+    ha:
+      vars:
+      hosts:
+        bee.local:
+    z2m:
+      vars:
+        z2m_device: "/dev/ttyUSB0"
+        z2m_adapter: "ember"
+        z2m_port: "8080"
+        z2m_tag: "1.40.2"
+      hosts:
+        bee.local:
+    motion:
+      vars:
+        motion_device: /dev/video0
+        motion_stream_port: 8081
+        motion_control_port: 8082
+      hosts:
+        bee.local:
+    mjpeg:
+      vars:
+        mjpeg_device: /dev/video0
+        mjpeg_port: 8090
+        mjpeg_res: 1280x720
       hosts:
         bee.local:

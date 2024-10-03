@@ -22,6 +22,7 @@
   - { name: htop, state: latest }
   - { name: net-tools, state: latest }
   - { name: lm-sensors, state: latest }
+  - { name: rsync, state: latest }
   ignore_errors: yes
   tags:
     - prereq
@@ -43,10 +44,10 @@
     - prereq
 
 - name: Add the user to proper groups
-  ansible.builtin.user:
-    name: '{{ user }}'
-    groups: docker
-    append: yes
+  ansible.builtin.user: name={{ user }} groups={{ item }} append=yes
+  with_items:
+    - docker
+    - dialout
   tags:
     - prereq
 

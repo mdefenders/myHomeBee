@@ -16,6 +16,12 @@ Run home Debian Linux multipurpose server
 - Mastodon server
 - GitHub Actions Runner
 - Mastodon Maintenance Automation 
+- Pi-hole for local DNS
+- Home Assistant
+- Motion (USB Cam to RTSP, Motion Detection)
+- Zigbee2MQTT
+- MJPEG Streamer (http://localhost:8090/?action=stream)
+
 
 # Preparation steps
 
